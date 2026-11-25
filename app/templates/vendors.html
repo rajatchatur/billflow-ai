@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Vendors</h1><p class="muted">Suppliers found on this firm's invoices. Derived from invoice data; no historical suggestions are applied automatically.</p></div></header>
+<section class="card">
+{% if vendors %}<table><thead><tr><th>Supplier</th><th>GSTIN</th><th class="num">Invoices</th><th class="num">Approved / exported</th><th class="num">Total value</th></tr></thead><tbody>
+{% for v in vendors %}<tr><td>{{ v['supplier_name'] }}</td><td>{{ v['supplier_gstin'] or '—' }}</td><td class="num">{{ v['invoices'] }}</td><td class="num">{{ v['approved'] }}</td><td class="num">{{ m.money(v['total']) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">No vendors yet.</p>{% endif %}
+</section>
+{% endblock %}

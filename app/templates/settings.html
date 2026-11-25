@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Settings</h1><p class="muted">Firm settings and processing configuration.</p></div></header>
+<div class="grid-2">
+<section class="card"><h2>Organisation</h2>
+{% if user.can('settings') %}<form method="post" action="/settings" class="stack">{{ m.csrf_field() }}<label>Firm name <input name="name" value="{{ org['name'] }}" required maxlength="150"></label><button class="btn btn-primary" type="submit">Save</button></form>
+{% else %}<p>{{ org['name'] }}</p><p class="muted">Only owners and administrators can change settings.</p>{% endif %}</section>
+<section class="card"><h2>Processing configuration</h2>
+<ul class="plain">
+<li>Rounding tolerance: ₹{{ '%.2f'|format(settings.tolerance_rupees) }}</li>
+<li>Max upload size: {{ settings.max_upload_bytes // (1024*1024) }} MB</li>
+<li>Image OCR (Tesseract): {% if ocr_ready %}available{% else %}not installed; images require manual entry{% endif %}</li>
+<li>AI provider: none. Extraction is rule-based. No invoice text leaves this machine.</li>
+<li>Session lifetime: {{ settings.session_max_age_seconds // 60 }} minutes</li>
+</ul>
+<p class="muted small">Configured through environment variables. See .env.example.</p></section>
+</div>
+{% endblock %}

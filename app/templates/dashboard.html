@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+{% set title = "Dashboard" %}
+<header class="page-head"><div><h1>Dashboard</h1><p class="muted">Live counts for {{ user.full_name }}'s firm. Figures come from the database only.</p></div>
+<a class="btn btn-primary" href="/invoices/upload">Upload invoices</a></header>
+<section class="stats" aria-label="Invoice statistics">
+  <div class="stat"><span>Total invoices</span><strong>{{ stats.total }}</strong></div>
+  <div class="stat"><span>Processing</span><strong>{{ stats.processing }}</strong></div>
+  <div class="stat"><span>Needs review</span><strong>{{ stats.needs_review }}</strong></div>
+  <div class="stat"><span>Ready for approval</span><strong>{{ stats.ready }}</strong></div>
+  <div class="stat"><span>Approved</span><strong>{{ stats.approved }}</strong></div>
+  <div class="stat"><span>Exported</span><strong>{{ stats.exported }}</strong></div>
+  <div class="stat"><span>Failed</span><strong>{{ stats.failed }}</strong></div>
+  <div class="stat"><span>Duplicate candidates</span><strong>{{ stats.duplicates }}</strong></div>
+</section>
+<section class="card">
+  <h2>Extraction quality</h2>
+  <p>{% if stats.avg_confidence is not none %}Average field confidence across extracted invoices: <strong>{{ stats.avg_confidence }}%</strong>. Confidence reflects rule-based pattern matches, not model accuracy.{% else %}No invoices processed yet. Upload a synthetic invoice to see extraction results.{% endif %}</p>
+  <p class="muted small">Active client companies: {{ stats.clients }}. OCR for images: {% if ocr_ready %}available{% else %}not installed (images need manual entry){% endif %}.</p>
+</section>
+{% endblock %}

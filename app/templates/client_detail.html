@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>{{ client['name'] }}</h1><p class="muted">GSTIN {{ client['gstin'] or 'not recorded' }} · State {{ client['state'] or '—' }} · {{ client['accounting_period'] or 'Period not set' }}</p></div>
+<a class="btn btn-primary" href="/invoices/upload?client_id={{ client['id'] }}">Upload invoices</a></header>
+<div class="grid-2">
+<section class="card"><h2>Invoices ({{ invoices|length }})</h2>
+{% if invoices %}<table><thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th class="num">Total</th><th>Status</th></tr></thead><tbody>
+{% for i in invoices %}<tr><td><a href="/invoices/{{ i['id'] }}">{{ i['invoice_number'] or 'No number' }}</a></td><td>{{ i['invoice_date'] or '—' }}</td><td>{{ i['supplier_name'] or '—' }}</td><td class="num">{{ m.money(i['total_amount']) }}</td><td>{{ m.badge(i['status']) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">No invoices for this client yet.</p>{% endif %}
+</section>
+<section class="card"><h2>Vendors seen</h2>
+{% if vendors %}<ul class="plain">{% for v in vendors %}<li>{{ v['supplier_name'] }} <span class="muted">{{ v['supplier_gstin'] or 'no GSTIN' }}</span></li>{% endfor %}</ul>
+{% else %}<p class="muted">Vendors appear here after invoices are processed.</p>{% endif %}
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% import "_macros.html" as m with context %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title or "BillFlow AI" }} · BillFlow AI</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+{% if user %}
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">BillFlow <span>AI</span></div>
+    <nav aria-label="Main">
+      <a href="/dashboard">Dashboard</a>
+      <a href="/clients">Client companies</a>
+      <a href="/invoices">Invoice inbox</a>
+      <a href="/invoices/upload">Upload invoices</a>
+      <a href="/duplicates">Duplicates</a>
+      <a href="/exceptions">Validation exceptions</a>
+      <a href="/vendors">Vendors</a>
+      <a href="/exports">Export centre</a>
+      <a href="/audit">Audit history</a>
+      <a href="/users">Users</a>
+      <a href="/settings">Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="who">{{ user.full_name }}<br><span class="muted">{{ user.role|capitalize }}</span></div>
+      <form method="post" action="/logout">{{ m.csrf_field() }}<button class="btn btn-ghost" type="submit">Sign out</button></form>
+    </div>
+  </aside>
+  <main class="content">
+{% else %}
+<main class="auth-wrap">
+{% endif %}
+    {% if flash %}<div class="alert alert-ok" role="status">{{ flash }}</div>{% endif %}
+    {% if error %}<div class="alert alert-err" role="alert">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+{% if user %}
+  </main>
+</div>
+{% else %}
+</main>
+{% endif %}
+<script src="/static/app.js" defer></script>
+</body>
+</html>

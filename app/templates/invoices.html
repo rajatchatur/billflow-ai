@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>{{ title or 'Invoice inbox' }}</h1><p class="muted">Every invoice belongs to this firm. Nothing is exported unless it is approved.</p></div>
+<a class="btn btn-primary" href="/invoices/upload">Upload invoices</a></header>
+<form method="get" class="filters"><label>Status
+<select name="status" onchange="this.form.submit()">
+  <option value="">All</option>
+  {% for key, label in status_labels.items() %}<option value="{{ key }}" {% if filter_status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select></label><noscript><button class="btn">Filter</button></noscript></form>
+<section class="card">
+{% if invoices %}<div class="table-scroll"><table><thead><tr><th>Invoice</th><th>Client</th><th>Supplier</th><th>Date</th><th class="num">Total</th><th>Confidence</th><th>Status</th></tr></thead><tbody>
+{% for i in invoices %}<tr><td><a href="/invoices/{{ i['id'] }}">{{ i['invoice_number'] or 'Unnumbered' }}</a>{% if i['duplicate_of_id'] %} <span class="tag tag-warn">dup?</span>{% endif %}</td>
+<td>{{ i['client_name'] }}</td><td>{{ i['supplier_name'] or '—' }}</td><td>{{ i['invoice_date'] or '—' }}</td><td class="num">{{ m.money(i['total_amount']) }}</td>
+<td>{% if i['extraction_confidence'] is not none %}{{ (i['extraction_confidence']*100)|round(0)|int }}%{% else %}<span class="muted">—</span>{% endif %}</td><td>{{ m.badge(i['status']) }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="muted">No invoices match this view. <a href="/invoices/upload">Upload invoices</a> to begin.</p>{% endif %}
+</section>
+{% endblock %}

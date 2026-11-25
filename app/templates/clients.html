@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Client companies</h1><p class="muted">Each SME client has its own invoices, duplicate checks and exports.</p></div></header>
+<div class="grid-2">
+<section class="card">
+  <h2>Clients ({{ clients|length }})</h2>
+  {% if clients %}
+  <table><thead><tr><th>Name</th><th>GSTIN</th><th>State</th><th>Period</th></tr></thead><tbody>
+  {% for c in clients %}<tr><td><a href="/clients/{{ c['id'] }}">{{ c['name'] }}</a></td><td>{{ c['gstin'] or '—' }}</td><td>{{ c['state'] or '—' }}</td><td>{{ c['accounting_period'] or '—' }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="muted">No client companies yet. Add one to start uploading invoices.</p>{% endif %}
+</section>
+{% if user.can('manage_clients') %}
+<section class="card">
+  <h2>Add client company</h2>
+  <form method="post" action="/clients" class="stack">
+    {{ m.csrf_field() }}
+    <label>Company name * <input name="name" required maxlength="150"></label>
+    <label>GSTIN <input name="gstin" maxlength="15" pattern="[0-9A-Za-z]{15}" placeholder="27AAPFU0939F1ZV" autocomplete="off"></label>
+    <label>PAN <input name="pan" maxlength="10" autocomplete="off"></label>
+    <label>Registered address <textarea name="address" rows="2" maxlength="300"></textarea></label>
+    <label>State <input name="state" maxlength="60"></label>
+    <label>State code (used when no GSTIN) <input name="state_code" maxlength="2" pattern="[0-9]{2}"></label>
+    <label>Accounting period <input name="accounting_period" maxlength="40" placeholder="FY 2026-27"></label>
+    <button class="btn btn-primary" type="submit">Create client</button>
+  </form>
+</section>
+{% endif %}
+</div>
+{% endblock %}

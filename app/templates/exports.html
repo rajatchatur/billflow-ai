@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Export centre</h1><p class="muted">Only approved invoices are exported. Exporting marks them as exported. Nothing is posted to accounting software.</p></div></header>
+<div class="grid-2">
+<section class="card">
+  <h2>Approved invoices ready</h2>
+  <p class="big">{{ approved_count }}</p>
+  {% if user.can('export') %}
+  <form method="post" action="/exports/csv" class="stack">{{ m.csrf_field() }}<input type="hidden" name="kind" value="invoices"><button class="btn btn-primary" type="submit" {% if not approved_count %}disabled{% endif %}>Download invoice CSV</button></form>
+  <form method="post" action="/exports/csv" class="stack">{{ m.csrf_field() }}<input type="hidden" name="kind" value="line_items"><button class="btn" type="submit" {% if not approved_count %}disabled{% endif %}>Download line-item CSV</button></form>
+  {% else %}<p class="muted">Your role cannot export.</p>{% endif %}
+</section>
+<section class="card">
+  <h2>Tally XML</h2>
+  <p class="notice">Tally XML export is not implemented in this MVP. It will not be offered until it is built and tested against real Tally import files.</p>
+</section>
+</div>
+{% endblock %}

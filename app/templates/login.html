@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<section class="card login-card">
+  <h1>Sign in to BillFlow AI</h1>
+  <p class="muted">Invoice processing for CA firms. Use the account your firm owner created for you.</p>
+  <form method="post" action="/login" class="stack">
+    {{ m.csrf_field() }}
+    <label>Email <input type="email" name="email" required autocomplete="username" maxlength="200"></label>
+    <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+  </form>
+  <p class="muted small">Development build. Do not use real client data until the security review in docs/SECURITY.md is complete.</p>
+</section>
+{% endblock %}

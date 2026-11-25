@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Validation exceptions</h1><p class="muted">Invoices that need a person to check values before they can be approved.</p></div></header>
+<section class="card">
+{% if items %}<table><thead><tr><th>Invoice</th><th>Client</th><th>Problems</th><th>Status</th></tr></thead><tbody>
+{% for it in items %}<tr><td><a href="/invoices/{{ it.row['id'] }}">{{ it.row['invoice_number'] or '#' ~ it.row['id'] }}</a></td><td>{{ it.row['client_name'] }}</td>
+<td>{% if it.row['failure_reason'] %}<div class="sev-warning">{{ it.row['failure_reason'] }}</div>{% endif %}{% for i in it.issues %}<div class="sev-{{ i.severity }}">{{ i.message }}</div>{% endfor %}{% if not it.issues and not it.row['failure_reason'] %}<span class="muted">Awaiting review</span>{% endif %}</td>
+<td>{{ m.badge(it.row['status']) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">No validation exceptions. Nice.</p>{% endif %}
+</section>
+{% endblock %}

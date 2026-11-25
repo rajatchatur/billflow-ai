@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Upload invoices</h1><p class="muted">PDF, JPG, JPEG or PNG up to {{ max_mb }} MB each. File type is checked from the content, not only the name.</p></div></header>
+<section class="card" id="uploader" data-csrf="{{ csrf }}">
+  <form class="stack" id="upload-form" onsubmit="return false">
+    <label>Client company *
+      <select name="client_id" required>
+        <option value="">Choose a client…</option>
+        {% for c in clients %}<option value="{{ c['id'] }}">{{ c['name'] }}</option>{% endfor %}
+      </select></label>
+    <div class="dropzone" tabindex="0" role="button" aria-label="Choose files or drop them here">
+      <p><strong>Drop invoices here</strong> or <label class="link" for="files">browse files</label></p>
+      <input id="files" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" hidden>
+    </div>
+    <ul id="queue" class="plain" aria-live="polite"></ul>
+    <button class="btn btn-primary" type="button" id="send" disabled>Process invoices</button>
+  </form>
+  {% if not ocr_ready %}<p class="notice">Image OCR is not available on this machine (Tesseract not found). JPG and PNG files will be stored and marked for manual entry. PDFs with selectable text are still extracted.</p>{% endif %}
+  {% if clients|length == 0 %}<p class="notice">Create a client company first. <a href="/clients">Go to client companies</a></p>{% endif %}
+</section>
+{% endblock %}

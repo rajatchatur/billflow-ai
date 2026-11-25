@@ -1,0 +1,95 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+{% set v = view['values'] %}{% set o = view.original %}
+{% set can_correct = user.can('correct') and invoice['status'] not in ('approved','exported') %}
+{% set can_decide = user.can('decide') %}
+<header class="page-head"><div><h1>Review invoice {{ invoice['invoice_number'] or '#' ~ invoice['id'] }}</h1>
+<p class="muted">{{ invoice['supplier_name'] or 'Supplier unknown' }} · Status {{ m.badge(invoice['status']) }} · Method <span class="tag">{{ invoice['extraction_method'] or 'none' }}</span> · {{ doc['original_filename'] }}</p></div>
+<div class="actions">
+  {% if can_decide and invoice['status'] not in ('approved','exported','rejected') %}
+  <form method="post" action="/invoices/{{ invoice['id'] }}/decision">{{ m.csrf_field() }}<input type="hidden" name="decision" value="approve"><button class="btn btn-success" type="submit">Approve</button></form>
+  {% endif %}
+  {% if can_decide and invoice['status'] not in ('exported','rejected') %}
+  <form method="post" action="/invoices/{{ invoice['id'] }}/decision">{{ m.csrf_field() }}<input type="hidden" name="decision" value="mark_review"><button class="btn" type="submit">Mark for review</button></form>
+  <form method="post" action="/invoices/{{ invoice['id'] }}/decision" class="inline">{{ m.csrf_field() }}<input type="hidden" name="decision" value="reject"><input name="note" placeholder="Reason (optional)" maxlength="300" aria-label="Rejection reason"><button class="btn btn-danger" type="submit">Reject</button></form>
+  {% endif %}
+  {% if can_decide and invoice['status'] in ('approved','rejected') %}
+  <form method="post" action="/invoices/{{ invoice['id'] }}/decision">{{ m.csrf_field() }}<input type="hidden" name="decision" value="reopen"><button class="btn" type="submit">Reopen</button></form>
+  {% endif %}
+  {% if user.can('upload') and invoice['status'] not in ('approved','exported') %}
+  <form method="post" action="/invoices/{{ invoice['id'] }}/retry">{{ m.csrf_field() }}<button class="btn" type="submit">Re-run extraction</button></form>
+  {% endif %}
+  <a class="btn" href="/exports">Export centre</a>
+</div></header>
+
+<div class="review">
+  <section class="card doc-pane" aria-label="Original document">
+    <div class="doc-head"><strong>Original document</strong><span class="muted small">SHA-256 {{ doc['sha256'][:16] }}… · {{ (doc['size_bytes']/1024)|round(1) }} KB</span></div>
+    {% if doc['detected_type'] == 'pdf' %}
+      <iframe class="doc-frame" title="Invoice PDF preview" src="{{ pdf_ref }}#view=FitH"></iframe>
+    {% else %}
+      <img class="doc-img" src="{{ pdf_ref }}" alt="Scanned invoice image" loading="lazy">
+    {% endif %}
+    <p class="muted small">Stored unmodified. Corrections never change this file.</p>
+  </section>
+
+  <section class="review-pane">
+    {% if view.warnings %}<div class="notice">{% for w in view.warnings %}<div>{{ w }}</div>{% endfor %}</div>{% endif %}
+    {% if dupes %}<div class="alert alert-warn"><strong>Duplicate candidates</strong>
+      {% for d in dupes %}<div>{{ d.reason }} <a href="/invoices/{{ d.row['id'] }}">Invoice #{{ d.row['id'] }}</a> ({{ d.row['status'] }})</div>{% endfor %}</div>{% endif %}
+
+    <form method="post" action="/invoices/{{ invoice['id'] }}/corrections" class="card stack" id="corrections">
+      {{ m.csrf_field() }}
+      <h2>Supplier and buyer</h2>
+      <div class="field-grid">
+        {% for name, label in [('supplier_name','Supplier name'),('supplier_gstin','Supplier GSTIN'),('supplier_address','Supplier address'),('supplier_state','Supplier state'),('buyer_name','Buyer name'),('buyer_gstin','Buyer GSTIN'),('buyer_address','Buyer address')] %}
+        <label>{{ label }} <span class="conf">{% if view.confidence.get(name) is not none %}{{ (view.confidence[name]*100)|round(0)|int }}%{% else %}not found{% endif %}</span>
+          <input name="{{ name }}" value="{{ v.get(name) or '' }}" {% if not can_correct %}disabled{% endif %} maxlength="300"></label>
+        {% endfor %}
+      </div>
+      <h2>Invoice details</h2>
+      <div class="field-grid">
+        {% for name, label in [('invoice_number','Invoice number'),('invoice_date','Invoice date (YYYY-MM-DD)'),('due_date','Due date'),('place_of_supply','Place of supply')] %}
+        <label>{{ label }} <span class="conf">{% if view.confidence.get(name) is not none %}{{ (view.confidence[name]*100)|round(0)|int }}%{% else %}not found{% endif %}</span>
+          <input name="{{ name }}" value="{{ v.get(name) or '' }}" {% if not can_correct %}disabled{% endif %} maxlength="300"></label>
+        {% endfor %}
+      </div>
+      <h2>Tax and totals</h2>
+      <div class="field-grid">
+        {% for name, label in [('subtotal','Subtotal'),('discount','Discount'),('taxable_value','Taxable value'),('cgst','CGST'),('sgst','SGST'),('igst','IGST'),('cess','Cess'),('rounding','Rounding'),('total_amount','Grand total')] %}
+        <label>{{ label }} <span class="conf">{% if view.confidence.get(name) is not none %}{{ (view.confidence[name]*100)|round(0)|int }}%{% else %}not found{% endif %}</span>
+          <input name="{{ name }}" inputmode="decimal" value="{{ v.get(name) if v.get(name) is not none else '' }}" {% if not can_correct %}disabled{% endif %}></label>
+        {% endfor %}
+      </div>
+      {% if can_correct %}<div class="actions"><button class="btn btn-primary" type="submit">Save corrections</button></div>{% endif %}
+    </form>
+
+    <section class="card">
+      <h2>Validation</h2>
+      {% if view.issues %}<ul class="issues">{% for i in view.issues %}<li class="sev-{{ i.severity }}"><strong>{{ i.severity|capitalize }}:</strong> {{ i.message }} <span class="muted small">[{{ i.code }}]</span></li>{% endfor %}</ul>
+      {% else %}<p class="ok">No validation issues found by the deterministic checks. This is not a GSTN portal verification.</p>{% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Line items</h2>
+      {% if view.line_items %}<div class="table-scroll"><table><thead><tr><th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">GST %</th><th class="num">Taxable</th><th class="num">Tax</th><th class="num">Line total</th></tr></thead><tbody>
+      {% for li in view.line_items %}<tr><td>{{ loop.index }}</td><td>{{ li['description'] }}</td><td>{{ li['hsn_sac'] or '—' }}</td><td class="num">{{ li['quantity'] if li['quantity'] is not none else '—' }}</td><td class="num">{{ m.money(li['unit_price']) }}</td><td class="num">{{ li['gst_rate'] if li['gst_rate'] is not none else '—' }}</td><td class="num">{{ m.money(li['taxable_value']) }}</td><td class="num">{{ m.money(li['tax_amount']) }}</td><td class="num">{{ m.money(li['line_total']) }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p class="muted">No line items were extracted. Line items cannot be edited in this MVP; totals can be corrected above.</p>{% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Original extraction</h2>
+      <p class="muted small">Values as first extracted, before any correction. Method: {{ invoice['extraction_method'] or 'none' }} (rule-based, not an AI model). Overall confidence {{ ((invoice['extraction_confidence'] or 0)*100)|round(0)|int }}%.</p>
+      <table class="compact"><tbody>
+      {% for k, val in o.items() %}<tr><th>{{ k|replace('_',' ')|capitalize }}</th><td>{{ val if val is not none else '—' }}</td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+
+    <section class="card">
+      <h2>Approval and audit history</h2>
+      {% if approvals %}<ul class="plain">{% for a in approvals %}<li><strong>{{ a['decision']|replace('_',' ')|capitalize }}</strong> by {{ a['full_name'] }} · {{ a['created_at'] }}{% if a['note'] %} — {{ a['note'] }}{% endif %}</li>{% endfor %}</ul>
+      {% else %}<p class="muted">No decisions recorded yet.</p>{% endif %}
+      <p><a href="/audit">View full audit history</a></p>
+    </section>
+  </section>
+</div>
+{% endblock %}

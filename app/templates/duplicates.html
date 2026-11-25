@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% import "_macros.html" as m with context %}{% block content %}
+<header class="page-head"><div><h1>Duplicate candidates</h1><p class="muted">Matches use client, supplier GSTIN, normalised invoice number, date and total, plus the file hash.</p></div></header>
+<section class="card">
+{% if items %}<table><thead><tr><th>Invoice</th><th>Client</th><th>Supplier</th><th>Matches</th><th>Status</th></tr></thead><tbody>
+{% for it in items %}<tr><td><a href="/invoices/{{ it.row['id'] }}">{{ it.row['invoice_number'] or '#' ~ it.row['id'] }}</a></td><td>{{ it.row['client_name'] }}</td><td>{{ it.row['supplier_name'] or '—' }}</td>
+<td>{% for d in it.dupes %}<div><span class="tag {% if d.kind == 'exact_duplicate' %}tag-err{% else %}tag-warn{% endif %}">{{ d.kind|replace('_',' ') }}</span> <a href="/invoices/{{ d.invoice_id }}">#{{ d.invoice_id }}</a> — {{ d.reason }}</div>{% endfor %}</td><td>{{ m.badge(it.row['status']) }}</td></tr>{% endfor %}
+</tbody></table>{% else %}<p class="muted">No duplicate candidates found.</p>{% endif %}
+</section>
+{% endblock %}
